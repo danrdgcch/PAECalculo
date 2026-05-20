@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Calificaciones — PAE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CONFIGURACIÓN — Lo único que normalmente necesitas tocar.
+     Si cambias el nombre del archivo Excel, cámbialo aquí.
+     ============================================================ */
+  /* (el nombre del archivo se define abajo, en la línea  const ARCHIVO = ...) */
+
+  :root{
+    --azul:#3b82f6;
+    --azul-osc:#2563eb;
+    --azul-claro:#dbeafe;
+    --cielo:#eff6ff;
+    --menta:#d1fae5;
+    --menta-txt:#059669;
+    --lila:#ede9fe;
+    --lila-txt:#7c3aed;
+    --durazno:#ffedd5;
+    --durazno-txt:#ea580c;
+    --rosa:#fee2e2;
+    --rosa-txt:#dc2626;
+    --amber:#fef3c7;
+    --amber-txt:#d97706;
+    --texto:#1e293b;
+    --suave:#64748b;
+    --tenue:#94a3b8;
+    --linea:#e2e8f0;
+    --tarjeta:#ffffff;
+    --radio:26px;
+    --sombra:0 10px 40px -12px rgba(59,130,246,.28);
+    --sombra-suave:0 4px 18px -6px rgba(30,41,59,.12);
+    --fuente:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--fuente);
+    color:var(--texto);
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #e0edff 0%, transparent 55%),
+      radial-gradient(900px 500px at 110% 10%, #e7f9f0 0%, transparent 50%),
+      linear-gradient(180deg,#f8fbff 0%,#eef4ff 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== FONDO: burbujas suaves flotando ===== */
+  .blob{position:fixed;border-radius:50%;filter:blur(40px);opacity:.5;z-index:0;animation:flota 14s ease-in-out infinite;}
+  .blob.b1{width:240px;height:240px;background:#bfdbfe;top:-60px;left:-40px;}
+  .blob.b2{width:200px;height:200px;background:#bbf7d0;bottom:-50px;right:-30px;animation-delay:-5s;}
+  .blob.b3{width:160px;height:160px;background:#ddd6fe;top:40%;right:-50px;animation-delay:-9s;}
+  @keyframes flota{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(-26px) translateX(14px);}}
+
+  .app{width:100%;max-width:440px;position:relative;z-index:1;}
+
+  /* ===== LOGIN ===== */
+  #login{
+    background:var(--tarjeta);
+    border-radius:34px;
+    padding:40px 30px 34px;
+    box-shadow:var(--sombra);
+    text-align:center;
+    animation:surge .6s cubic-bezier(.16,1,.3,1);
+  }
+  .marca{
+    width:74px;height:74px;margin:0 auto 20px;
+    border-radius:24px;
+    background:linear-gradient(135deg,var(--azul) 0%,#60a5fa 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 12px 28px -8px rgba(59,130,246,.7);
+    font-size:34px;
+  }
+  #login h1{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px;}
+  #login .sub{color:var(--suave);font-size:15px;font-weight:600;margin-bottom:28px;line-height:1.4;}
+  .campo{position:relative;margin-bottom:14px;}
+  .campo label{
+    display:block;text-align:left;font-size:13px;font-weight:800;
+    color:var(--suave);margin:0 4px 8px;text-transform:uppercase;letter-spacing:.4px;
+  }
+  .campo input{
+    width:100%;padding:17px 18px;font-size:18px;font-family:var(--fuente);font-weight:700;
+    border:2px solid var(--linea);border-radius:18px;background:#f8fafc;color:var(--texto);
+    transition:.2s;text-align:center;letter-spacing:1px;
+  }
+  .campo input:focus{outline:none;border-color:var(--azul);background:#fff;box-shadow:0 0 0 4px var(--azul-claro);}
+  .campo input::placeholder{color:var(--tenue);letter-spacing:.5px;font-weight:600;}
+  .btn{
+    width:100%;padding:17px;font-size:17px;font-weight:800;font-family:var(--fuente);
+    color:#fff;background:linear-gradient(135deg,var(--azul) 0%,var(--azul-osc) 100%);
+    border:none;border-radius:18px;cursor:pointer;margin-top:6px;
+    box-shadow:0 10px 22px -8px rgba(37,99,235,.7);transition:.2s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 26px -8px rgba(37,99,235,.8);}
+  .btn:active{transform:translateY(0) scale(.99);}
+  .btn:disabled{opacity:.55;cursor:default;transform:none;}
+  .aviso{
+    margin-top:16px;padding:13px 16px;border-radius:14px;font-size:14px;font-weight:700;
+    background:var(--rosa);color:var(--rosa-txt);display:none;animation:surge .3s;
+  }
+  .cargando{margin-top:18px;color:var(--tenue);font-size:13px;font-weight:700;display:none;}
+
+  /* ===== DASHBOARD ===== */
+  #dash{display:none;animation:surge .55s cubic-bezier(.16,1,.3,1);}
+  .saludo{
+    background:linear-gradient(135deg,var(--azul) 0%,#5b9bf8 55%,#7c9ff9 100%);
+    border-radius:30px;padding:30px 26px 28px;color:#fff;position:relative;overflow:hidden;
+    box-shadow:var(--sombra);margin-bottom:16px;
+  }
+  .saludo::after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;
+    background:rgba(255,255,255,.13);top:-50px;right:-40px;}
+  .saludo .hola{font-size:15px;font-weight:700;opacity:.92;}
+  .saludo .nombre{font-size:30px;font-weight:900;letter-spacing:-.5px;margin-top:2px;line-height:1.1;}
+  .saludo .prog{font-size:13.5px;font-weight:700;opacity:.9;margin-top:10px;}
+
+  /* Tarjeta de calificación final */
+  .final{
+    background:var(--tarjeta);border-radius:var(--radio);padding:26px 24px;text-align:center;
+    box-shadow:var(--sombra-suave);margin-bottom:16px;position:relative;
+  }
+  .final .et{font-size:13px;font-weight:800;color:var(--suave);text-transform:uppercase;letter-spacing:.6px;}
+  .final .num{font-size:62px;font-weight:900;line-height:1;margin:6px 0 4px;letter-spacing:-2px;}
+  .final .esc{font-size:14px;font-weight:700;color:var(--tenue);}
+  .ring{display:inline-block;margin-top:12px;}
+  .estado-chip{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;
+    padding:9px 18px;border-radius:999px;font-size:14px;font-weight:800;
+  }
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .rubro{
+    background:var(--tarjeta);border-radius:22px;padding:20px 18px;box-shadow:var(--sombra-suave);
+    position:relative;overflow:hidden;
+  }
+  .rubro .ico{font-size:24px;margin-bottom:8px;display:block;}
+  .rubro .titulo{font-size:13.5px;font-weight:800;color:var(--suave);line-height:1.25;}
+  .rubro .dato{font-size:30px;font-weight:900;letter-spacing:-1px;margin-top:8px;}
+  .rubro .peso{font-size:12.5px;font-weight:700;color:var(--tenue);margin-top:2px;}
+  .rubro .aporta{
+    margin-top:12px;font-size:12.5px;font-weight:800;padding:6px 11px;border-radius:10px;
+    display:inline-block;
+  }
+  .barra{height:8px;border-radius:99px;background:#eef2f7;margin-top:12px;overflow:hidden;}
+  .barra > i{display:block;height:100%;border-radius:99px;transition:width 1s cubic-bezier(.16,1,.3,1);}
+
+  /* Asistencia obligatoria — tarjeta destacada full width */
+  .asist{
+    background:var(--tarjeta);border-radius:22px;padding:20px 22px;box-shadow:var(--sombra-suave);
+    display:flex;align-items:center;gap:16px;margin-bottom:16px;border:2px solid transparent;
+  }
+  .asist .badge{
+    width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    font-size:28px;flex:0 0 auto;
+  }
+  .asist .txt .t{font-size:13.5px;font-weight:800;color:var(--suave);line-height:1.2;}
+  .asist .txt .v{font-size:21px;font-weight:900;margin-top:3px;letter-spacing:-.3px;}
+  .asist .txt small{font-size:12.5px;font-weight:700;color:var(--tenue);}
+
+  .ok{background:var(--menta);color:var(--menta-txt);}
+  .warn{background:var(--rosa);color:var(--rosa-txt);}
+  .neutro{background:var(--azul-claro);color:var(--azul-osc);}
+
+  .salir{
+    width:100%;padding:15px;font-size:15px;font-weight:800;font-family:var(--fuente);
+    color:var(--suave);background:var(--tarjeta);border:2px solid var(--linea);border-radius:16px;
+    cursor:pointer;transition:.2s;
+  }
+  .salir:hover{border-color:var(--azul);color:var(--azul);}
+  .pie{text-align:center;color:var(--tenue);font-size:12px;font-weight:700;margin-top:18px;}
+
+  @keyframes surge{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .reveal{opacity:0;animation:surge .55s cubic-bezier(.16,1,.3,1) forwards;}
+
+  @media(max-width:380px){
+    .saludo .nombre{font-size:26px;}
+    .final .num{font-size:54px;}
+  }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div class="app">
+  <!-- LOGIN -->
+  <div id="login">
+    <div class="marca">🎓</div>
+    <h1>Mis Calificaciones</h1>
+    <p class="sub">Programa de Asesorías (PAE)<br>Ingresa tu número de cuenta para ver tus resultados</p>
+    <div class="campo">
+      <label for="cuenta">Número de cuenta</label>
+      <input id="cuenta" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234567">
+    </div>
+    <button class="btn" id="btnEntrar">Ver mis calificaciones</button>
+    <div class="aviso" id="aviso"></div>
+    <div class="cargando" id="cargando">Cargando datos…</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash">
+    <div class="saludo">
+      <div class="hola">¡Hola! 👋</div>
+      <div class="nombre" id="dNombre">—</div>
+      <div class="prog" id="dProg"></div>
+    </div>
+
+    <div class="final reveal" style="animation-delay:.05s">
+      <div class="et">Calificación final (DGAE)</div>
+      <div class="num" id="dFinal">—</div>
+      <div class="esc" id="dEsc">de 10</div>
+      <div id="dChip"></div>
+      <div id="dProv" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--linea);">
+        <span style="font-size:12.5px;font-weight:800;color:var(--tenue);text-transform:uppercase;letter-spacing:.4px;">Provisional</span>
+        <span id="dProvVal" style="font-size:16px;font-weight:900;color:var(--suave);margin-left:10px;"></span>
+      </div>
+    </div>
+
+    <div class="asist reveal" id="cardAsist" style="animation-delay:.12s">
+      <div class="badge" id="aBadge">✓</div>
+      <div class="txt">
+        <div class="t">Asistencia obligatoria</div>
+        <div class="v" id="aValor">—</div>
+        <small id="aNota">Ambas sesiones</small>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="rubro reveal" style="animation-delay:.18s">
+        <span class="ico">📘</span>
+        <div class="titulo">Khan Academy</div>
+        <div class="dato" id="kDato">—</div>
+        <div class="peso" id="kPeso">Promedio</div>
+        <div class="barra"><i id="kBarra" style="width:0"></i></div>
+        <div class="aporta neutro" id="kAporta" style="display:none"></div>
+      </div>
+      <div class="rubro reveal" style="animation-delay:.24s">
+        <span class="ico">📝</span>
+        <div class="titulo">Examen Final</div>
+        <div class="dato" id="eDato">—</div>
+        <div class="peso" id="ePeso">Calificación</div>
+        <div class="barra"><i id="eBarra" style="width:0"></i></div>
+        <div class="aporta neutro" id="eAporta" style="display:none"></div>
+      </div>
+    </div>
+
+    <button class="salir" id="btnSalir">Cerrar sesión</button>
+    <div class="pie">Si algún dato no coincide, avisa a tu profesor.</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN
+   Solo cambia el nombre del archivo si tu Excel se llama distinto.
+   El archivo debe estar en la MISMA carpeta que este index.html
+   ============================================================ */
+const ARCHIVO = "CalculoPae.xlsx";
+
+/* ===== utilidades ===== */
+const norm = s => String(s||"").trim().toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const limpiarCuenta = s => String(s||"").replace(/\D/g,""); // solo dígitos
+
+let DATOS = [];          // filas de alumnos
+let COLS = {};           // mapeo de columnas detectadas
+
+/* ===== detección flexible de columnas ===== */
+function detectarColumnas(headers){
+  const m = {acc:null,nombre:null,pila:null,dgae:null,prov:null,khanRaw:null,khanPct:null,
+             examRaw:null,examPct:null,asist:null, khanPeso:"", examPeso:""};
+  headers.forEach(h=>{
+    const n = norm(h);
+    if(!n) return;
+    // número de cuenta: "No.", "No. ", "numero de cuenta", "cuenta", "lista"
+    if(!m.acc && (/^no\.?$/.test(n) || /cuenta/.test(n) || /lista/.test(n) || /matricula/.test(n))) m.acc=h;
+    // nombre de pila (revisar antes que "nombre" a secas)
+    else if(!m.pila && /pila/.test(n)) m.pila=h;
+    // nombre completo
+    if(!m.nombre && /nombre/.test(n) && !/pila/.test(n)) m.nombre=h;
+    // Final DGAE (oficial) y Final provisional (calculada en curso)
+    if(/final/.test(n) && /dgae/.test(n)) m.dgae=h;
+    else if(/final/.test(n) && /provisional/.test(n)) m.prov=h;
+    // Khan Academy
+    if(/khan/.test(n)){
+      if(/porcentaje|%|\d+\s*%|80/.test(n)){ m.khanPct=h; const w=n.match(/(\d{1,3})\s*%/); m.khanPeso=w?w[1]+"%":"80%"; }
+      else m.khanRaw=h;
+    }
+    // Examen
+    if(/examen/.test(n)){
+      if(/porcentaje|%|\d+\s*%|20/.test(n)){ m.examPct=h; const w=n.match(/(\d{1,3})\s*%/); m.examPeso=w?w[1]+"%":"20%"; }
+      else m.examRaw=h;
+    }
+    // Asistencia
+    if(!m.asist && /asistencia/.test(n)) m.asist=h;
+  });
+  return m;
+}
+
+/* ===== interpretar la asistencia obligatoria ===== */
+function interpretarAsistencia(val){
+  if(val===null||val===undefined||String(val).trim()===""){
+    return {cumple:null, etiqueta:"Sin registro", nota:"Aún no capturada"};
+  }
+  const n = norm(val);
+  const afirm = ["si","sí","x","✓","1","si.","cumplida","cumplido","asistio","asistió","completa","completo","ambas","ok","✔"];
+  const niega = ["no","0","falta","faltó","falto","pendiente","incompleta","incompleto","no asistio","no asistió"];
+  // número: 2 sesiones de 2, etc.
+  const num = parseFloat(String(val).replace(",","."));
+  if(afirm.includes(n)) return {cumple:true, etiqueta:"Cumplida", nota:"Asististe a ambas sesiones"};
+  if(niega.includes(n)) return {cumple:false, etiqueta:"No cumplida", nota:"Falta asistencia obligatoria"};
+  if(!isNaN(num)){
+    if(num>=2) return {cumple:true, etiqueta:"Cumplida ("+(Number.isInteger(num)?num:num)+")", nota:"Sesiones registradas"};
+    if(num===1) return {cumple:false, etiqueta:"Solo 1 sesión", nota:"Falta una sesión"};
+    if(num===0) return {cumple:false, etiqueta:"No cumplida", nota:"Sin asistencia registrada"};
+  }
+  // cualquier otro texto: lo mostramos tal cual, en neutro
+  return {cumple:"otro", etiqueta:String(val).trim(), nota:"Ambas sesiones"};
+}
+
+/* ===== formatear números ===== */
+function fmt(v){
+  if(v===null||v===undefined||String(v).trim()==="") return "—";
+  const n = parseFloat(String(v).replace(",","."));
+  if(isNaN(n)) return String(v).trim();
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/,"");
+}
+function aNum(v){ const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; }
+
+/* ===== color según calificación (escala 0-10) ===== */
+function colorCal(n){
+  if(n===null) return {bg:"#cbd5e1",txt:"var(--tenue)"};
+  if(n>=8)  return {bg:"linear-gradient(90deg,#34d399,#10b981)", txt:"var(--menta-txt)", chipBg:"var(--menta)"};
+  if(n>=6)  return {bg:"linear-gradient(90deg,#fbbf24,#f59e0b)", txt:"var(--amber-txt)", chipBg:"var(--amber)"};
+  return        {bg:"linear-gradient(90deg,#f87171,#ef4444)", txt:"var(--rosa-txt)",  chipBg:"var(--rosa)"};
+}
+
+/* ===== cargar Excel ===== */
+async function cargar(){
+  const r = await fetch(ARCHIVO + "?t=" + Date.now()); // evita caché viejo
+  if(!r.ok) throw new Error("No se encontró "+ARCHIVO);
+  const buf = await r.arrayBuffer();
+  const wb = XLSX.read(buf,{type:"array"});
+  const hoja = wb.Sheets[wb.SheetNames[0]];
+  const filas = XLSX.utils.sheet_to_json(hoja,{defval:""});
+  DATOS = filas;
+  const headers = filas.length ? Object.keys(filas[0]) : Object.keys(XLSX.utils.sheet_to_json(hoja,{header:1})[0]||{});
+  COLS = detectarColumnas(headers.length?headers:(filas[0]?Object.keys(filas[0]):[]));
+}
+
+/* ===== buscar alumno ===== */
+function buscar(cuenta){
+  const c = limpiarCuenta(cuenta);
+  return DATOS.find(f => limpiarCuenta(f[COLS.acc]) === c);
+}
+
+/* ===== mostrar dashboard ===== */
+function mostrar(al){
+  const pila = (COLS.pila && al[COLS.pila]) ? al[COLS.pila]
+             : (COLS.nombre && al[COLS.nombre] ? String(al[COLS.nombre]).split(" ")[0] : "Estudiante");
+  document.getElementById("dNombre").textContent = String(pila).trim();
+
+  // Khan Academy
+  const kRaw = COLS.khanRaw ? al[COLS.khanRaw] : null;
+  const kPct = COLS.khanPct ? aNum(al[COLS.khanPct]) : null;
+  document.getElementById("kDato").textContent = fmt(kRaw);
+  document.getElementById("kPeso").textContent = "Promedio del curso";
+  // barra: si el promedio parece estar sobre 100, escalar a 100; si sobre 10, escalar a 10
+  let kNum = aNum(kRaw), kEscala = 100;
+  if(kNum!==null && kNum<=10) kEscala = 10;
+  const kPctBar = kNum!==null ? Math.max(0,Math.min(100,(kNum/kEscala)*100)) : 0;
+  const kCol = colorCal(kNum!==null ? (kNum/kEscala*10) : null);
+  setTimeout(()=>{const b=document.getElementById("kBarra"); b.style.width=kPctBar+"%"; b.style.background=kCol.bg;},250);
+  if(kPct!==null){
+    const a=document.getElementById("kAporta");
+    a.style.display="inline-block";
+    a.textContent="Aporta "+fmt(kPct)+" · "+(COLS.khanPeso||"80%");
+  }
+
+  // Examen Final
+  const eRaw = COLS.examRaw ? al[COLS.examRaw] : null;
+  const ePct = COLS.examPct ? aNum(al[COLS.examPct]) : null;
+  document.getElementById("eDato").textContent = fmt(eRaw);
+  document.getElementById("ePeso").textContent = "Calificación del examen";
+  let eNum = aNum(eRaw), eEscala = 100;
+  if(eNum!==null && eNum<=10) eEscala = 10;
+  const ePctBar = eNum!==null ? Math.max(0,Math.min(100,(eNum/eEscala)*100)) : 0;
+  const eCol = colorCal(eNum!==null ? (eNum/eEscala*10) : null);
+  setTimeout(()=>{const b=document.getElementById("eBarra"); b.style.width=ePctBar+"%"; b.style.background=eCol.bg;},350);
+  if(ePct!==null){
+    const a=document.getElementById("eAporta");
+    a.style.display="inline-block";
+    a.textContent="Aporta "+fmt(ePct)+" · "+(COLS.examPeso||"20%");
+  }
+
+  // Asistencia obligatoria (se interpreta antes para poder condicionar el estado final)
+  const as = interpretarAsistencia(COLS.asist ? al[COLS.asist] : null);
+
+  // Calificación final: DGAE es siempre la protagonista ("—" si vacía)
+  // Final provisional se muestra siempre como dato secundario informativo
+  const esNP = v => norm(v)==="np";
+  const pick = raw => {
+    if(raw===null||raw===undefined||String(raw).trim()==="") return {kind:"empty"};
+    if(esNP(raw)) return {kind:"np"};
+    const n=aNum(raw); return n!==null ? {kind:"num",n} : {kind:"empty"};
+  };
+  const dg = pick(COLS.dgae ? al[COLS.dgae] : "");
+  const pv = pick(COLS.prov ? al[COLS.prov] : "");
+
+  const elFinal  = document.getElementById("dFinal");
+  const elEsc    = document.getElementById("dEsc");
+  const elEt     = document.querySelector("#dash .final .et");
+  const chip     = document.getElementById("dChip");
+  const dProvEl  = document.getElementById("dProv");
+  const dProvVal = document.getElementById("dProvVal");
+
+  // — siempre muestra DGAE —
+  elEt.textContent = "Calificación final (DGAE)";
+  if(dg.kind==="empty"){
+    elFinal.textContent="—"; elFinal.style.color="var(--tenue)";
+    elEsc.textContent="Sin capturar"; chip.innerHTML="";
+  } else if(dg.kind==="np"){
+    elFinal.textContent="NP"; elFinal.style.color="var(--suave)";
+    elEsc.textContent="No presentó";
+    chip.innerHTML='<span class="estado-chip neutro">No presentó</span>';
+  } else {
+    const n=dg.n;
+    elFinal.textContent = Number.isInteger(n) ? n : n.toFixed(1).replace(/\.0$/,"");
+    const c=colorCal(n); elFinal.style.color=c.txt;
+    elEsc.textContent="de 10";
+    const aprob=n>=6;
+    if(as.cumple===false){
+      chip.innerHTML='<span class="estado-chip warn">⚠ Falta asistencia obligatoria</span>';
+    } else {
+      chip.innerHTML='<span class="estado-chip '+(aprob?"ok":"warn")+'">'
+        +(aprob?"✓ Aprobado":"✗ No aprobatorio")+'</span>';
+    }
+  }
+
+  // — provisional: siempre visible si tiene dato —
+  if(pv.kind!=="empty"){
+    dProvEl.style.display="block";
+    dProvVal.textContent = pv.kind==="np" ? "NP" :
+      (Number.isInteger(pv.n) ? pv.n : pv.n.toFixed(2).replace(/\.?0+$/,""));
+  } else {
+    dProvEl.style.display="none";
+  }
+
+  // Progreso (texto bajo el nombre)
+  const partes=[];
+  if(COLS.khanPct && aNum(al[COLS.khanPct])!==null) partes.push("Khan Academy");
+  if(COLS.examPct && aNum(al[COLS.examPct])!==null) partes.push("Examen final");
+  document.getElementById("dProg").textContent = partes.length
+    ? "Ya tienes registro de: "+partes.join(" y ")
+    : "Aquí verás tus calificaciones del programa";
+
+  // Asistencia obligatoria (render de la tarjeta)
+  const card = document.getElementById("cardAsist");
+  const badge= document.getElementById("aBadge");
+  document.getElementById("aValor").textContent = as.etiqueta;
+  document.getElementById("aNota").textContent = as.nota;
+  card.style.borderColor="transparent"; badge.className="badge";
+  if(as.cumple===true){ badge.classList.add("ok"); badge.textContent="✓"; card.style.borderColor="#a7f3d0"; }
+  else if(as.cumple===false){ badge.classList.add("warn"); badge.textContent="!"; card.style.borderColor="#fecaca"; }
+  else { badge.classList.add("neutro"); badge.textContent="•"; }
+
+  document.getElementById("login").style.display="none";
+  document.getElementById("dash").style.display="block";
+  window.scrollTo(0,0);
+}
+
+/* ===== eventos ===== */
+const aviso = document.getElementById("aviso");
+function mostrarAviso(t){ aviso.textContent=t; aviso.style.display="block"; }
+
+async function entrar(){
+  const val = document.getElementById("cuenta").value.trim();
+  aviso.style.display="none";
+  if(!val){ mostrarAviso("Escribe tu número de cuenta."); return; }
+  const btn=document.getElementById("btnEntrar");
+  btn.disabled=true;
+  document.getElementById("cargando").style.display="block";
+  try{
+    if(!DATOS.length) await cargar();
+    const al = buscar(val);
+    if(!al){ mostrarAviso("No encontramos ese número de cuenta. Revísalo e inténtalo de nuevo."); }
+    else { mostrar(al); }
+  }catch(e){
+    mostrarAviso("No se pudieron cargar los datos. Revisa que el archivo «"+ARCHIVO+"» esté en la misma carpeta.");
+    console.error(e);
+  }finally{
+    btn.disabled=false;
+    document.getElementById("cargando").style.display="none";
+  }
+}
+
+document.getElementById("btnEntrar").addEventListener("click",entrar);
+document.getElementById("cuenta").addEventListener("keydown",e=>{if(e.key==="Enter")entrar();});
+document.getElementById("btnSalir").addEventListener("click",()=>{
+  document.getElementById("dash").style.display="none";
+  document.getElementById("login").style.display="block";
+  document.getElementById("cuenta").value="";
+  aviso.style.display="none";
+  // reiniciar barras
+  document.getElementById("kBarra").style.width="0";
+  document.getElementById("eBarra").style.width="0";
+  document.getElementById("cuenta").focus();
+});
+
+// Precargar el Excel al abrir (para que la primera consulta sea instantánea)
+cargar().catch(()=>{});
+</script>
+</body>
+</html>
